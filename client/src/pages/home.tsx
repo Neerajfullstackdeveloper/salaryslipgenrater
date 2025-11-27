@@ -1,9 +1,9 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef } from "react";
 import { SalaryForm } from "@/components/salary-form";
-import { SalarySlip, Company } from "@/components/salary-slip";
+import { SalarySlip } from "@/components/salary-slip";
 import { calculateSalary, SalaryInput, SalaryResult } from "@/lib/calculations";
 import { Button } from "@/components/ui/button";
-import { Printer, Download, Plus, Trash2, Building2, Check } from "lucide-react";
+import { Printer, Download, Plus, Trash2, Building2 } from "lucide-react";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
 import { useToast } from "@/hooks/use-toast";
@@ -13,18 +13,15 @@ import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-
-interface Employee {
-  id: string;
-  name: string;
-  basicSalary: number;
-}
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { employeeApi, companyApi } from "@/lib/api";
+import type { Employee, Company, InsertEmployee, InsertCompany } from "@shared/schema";
 
 export default function Home() {
   const [input, setInput] = useState<SalaryInput>({
     employeeName: "",
     employeeId: "",
-    month: "",
+    month: new Date().toLocaleString('default', { month: 'long', year: 'numeric' }),
     basicSalary: 0,
     late10minCount: 0,
     late30minCount: 0,
@@ -43,42 +40,81 @@ export default function Home() {
     netSalary: 0,
   });
 
-  // Employee Management State
-  const [employees, setEmployees] = useState<Employee[]>(() => {
-    const saved = localStorage.getItem("employees");
-    return saved ? JSON.parse(saved) : [];
-  });
-  const [newEmployee, setNewEmployee] = useState<Partial<Employee>>({});
+  const [newEmployee, setNewEmployee] = useState<Partial<InsertEmployee>>({});
   const [isAddEmployeeOpen, setIsAddEmployeeOpen] = useState(false);
-  const [selectedEmployeeId, setSelectedEmployeeId] = useState<string | null>(null);
+  const [selectedEmployeeId, setSelectedEmployeeId] = useState<number | null>(null);
 
-  // Company Management State
-  const [companies, setCompanies] = useState<Company[]>(() => {
-    const saved = localStorage.getItem("companies");
-    return saved ? JSON.parse(saved) : [];
-  });
-  const [newCompany, setNewCompany] = useState<Partial<Company>>({});
+  const [newCompany, setNewCompany] = useState<Partial<InsertCompany>>({});
   const [isAddCompanyOpen, setIsAddCompanyOpen] = useState(false);
-  const [selectedCompanyId, setSelectedCompanyId] = useState<string>(() => {
-     const saved = localStorage.getItem("selectedCompanyId");
-     return saved || "";
-  });
+  const [selectedCompanyId, setSelectedCompanyId] = useState<number | null>(null);
 
   const slipRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
   const [isGenerating, setIsGenerating] = useState(false);
+  const queryClient = useQueryClient();
 
-  useEffect(() => {
-    localStorage.setItem("employees", JSON.stringify(employees));
-  }, [employees]);
+  // Fetch employees
+  const { data: employees = [], isLoading: employeesLoading } = useQuery({
+    queryKey: ["employees"],
+    queryFn: employeeApi.getAll,
+  });
 
-  useEffect(() => {
-    localStorage.setItem("companies", JSON.stringify(companies));
-  }, [companies]);
-  
-  useEffect(() => {
-    localStorage.setItem("selectedCompanyId", selectedCompanyId);
-  }, [selectedCompanyId]);
+  // Fetch companies
+  const { data: companies = [], isLoading: companiesLoading } = useQuery({
+    queryKey: ["companies"],
+    queryFn: companyApi.getAll,
+  });
+
+  // Employee mutations
+  const createEmployeeMutation = useMutation({
+    mutationFn: employeeApi.create,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["employees"] });
+      setNewEmployee({});
+      setIsAddEmployeeOpen(false);
+      toast({ title: "Success", description: "Employee added successfully" });
+    },
+    onError: (error: any) => {
+      toast({ title: "Error", description: error.message || "Failed to create employee", variant: "destructive" });
+    },
+  });
+
+  const deleteEmployeeMutation = useMutation({
+    mutationFn: employeeApi.delete,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["employees"] });
+      toast({ title: "Deleted", description: "Employee removed" });
+    },
+    onError: () => {
+      toast({ title: "Error", description: "Failed to delete employee", variant: "destructive" });
+    },
+  });
+
+  // Company mutations
+  const createCompanyMutation = useMutation({
+    mutationFn: companyApi.create,
+    onSuccess: (newCompany) => {
+      queryClient.invalidateQueries({ queryKey: ["companies"] });
+      setNewCompany({});
+      setIsAddCompanyOpen(false);
+      setSelectedCompanyId(newCompany.id);
+      toast({ title: "Success", description: "Company added successfully" });
+    },
+    onError: (error: any) => {
+      toast({ title: "Error", description: error.message || "Failed to create company", variant: "destructive" });
+    },
+  });
+
+  const deleteCompanyMutation = useMutation({
+    mutationFn: companyApi.delete,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["companies"] });
+      toast({ title: "Deleted", description: "Company removed" });
+    },
+    onError: () => {
+      toast({ title: "Error", description: "Failed to delete company", variant: "destructive" });
+    },
+  });
 
   const handleCalculate = (data: SalaryInput) => {
     setInput(data);
@@ -87,25 +123,17 @@ export default function Home() {
 
   // --- Employee Handlers ---
   const handleAddEmployee = () => {
-    if (!newEmployee.name || !newEmployee.id || !newEmployee.basicSalary) {
+    if (!newEmployee.name || !newEmployee.employeeId || !newEmployee.basicSalary) {
       toast({ title: "Validation Error", description: "All fields are required", variant: "destructive" });
       return;
     }
-    if (employees.some(e => e.id === newEmployee.id)) {
-      toast({ title: "Error", description: "Employee ID already exists", variant: "destructive" });
-      return;
-    }
-    setEmployees([...employees, newEmployee as Employee]);
-    setNewEmployee({});
-    setIsAddEmployeeOpen(false);
-    toast({ title: "Success", description: "Employee added successfully" });
+    createEmployeeMutation.mutate(newEmployee as InsertEmployee);
   };
 
-  const handleDeleteEmployee = (id: string, e: React.MouseEvent) => {
+  const handleDeleteEmployee = (id: number, e: React.MouseEvent) => {
     e.stopPropagation();
-    setEmployees(employees.filter(emp => emp.id !== id));
     if (selectedEmployeeId === id) setSelectedEmployeeId(null);
-    toast({ title: "Deleted", description: "Employee removed" });
+    deleteEmployeeMutation.mutate(id);
   };
 
   const handleSelectEmployee = (emp: Employee) => {
@@ -113,7 +141,7 @@ export default function Home() {
     setInput(prev => ({
       ...prev,
       employeeName: emp.name,
-      employeeId: emp.id,
+      employeeId: emp.employeeId,
       basicSalary: emp.basicSalary
     }));
   };
@@ -124,13 +152,7 @@ export default function Home() {
       toast({ title: "Validation Error", description: "Company Name is required", variant: "destructive" });
       return;
     }
-    const id = `comp_${Date.now()}`;
-    const companyToAdd = { ...newCompany, id } as Company;
-    setCompanies([...companies, companyToAdd]);
-    setNewCompany({});
-    setIsAddCompanyOpen(false);
-    setSelectedCompanyId(id); // Auto select new company
-    toast({ title: "Success", description: "Company added successfully" });
+    createCompanyMutation.mutate(newCompany as InsertCompany);
   };
 
   const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -146,22 +168,17 @@ export default function Home() {
 
   // --- PDF ---
   const handleDownloadPdf = async () => {
-    // Create a temporary container for the PDF generation to avoid scaling/layout issues from the preview
     const elementToCapture = slipRef.current;
     if (!elementToCapture) return;
 
     setIsGenerating(true);
     try {
-      // We clone the element to render it at full scale off-screen or in a controlled way
-      // Actually, html2canvas works best if the element is visible. 
-      // We will use the existing ref but ensure we pass correct options.
-      
       const canvas = await html2canvas(elementToCapture, {
-        scale: 3, // Higher quality
-        useCORS: true, // Important for images (logos)
+        scale: 3,
+        useCORS: true,
         logging: false,
         backgroundColor: "#ffffff",
-        windowWidth: 210 * 3.7795275591, // A4 width in pixels approx
+        windowWidth: 210 * 3.7795275591,
       });
       
       const imgData = canvas.toDataURL("image/png");
@@ -172,11 +189,9 @@ export default function Home() {
       });
       
       const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = pdf.internal.pageSize.getHeight();
       const imgWidth = canvas.width;
       const imgHeight = canvas.height;
       const ratio = pdfWidth / imgWidth;
-      
       const finalHeight = imgHeight * ratio;
       
       pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, finalHeight);
@@ -231,26 +246,33 @@ export default function Home() {
                       </div>
                     </div>
                     <DialogFooter>
-                      <Button onClick={handleAddCompany}>Save Company</Button>
+                      <Button onClick={handleAddCompany} disabled={createCompanyMutation.isPending}>
+                        {createCompanyMutation.isPending ? "Saving..." : "Save Company"}
+                      </Button>
                     </DialogFooter>
                   </DialogContent>
                 </Dialog>
              </div>
              
-             <Select value={selectedCompanyId} onValueChange={setSelectedCompanyId}>
+             <Select 
+               value={selectedCompanyId?.toString() || ""} 
+               onValueChange={(value) => setSelectedCompanyId(value ? parseInt(value) : null)}
+             >
               <SelectTrigger>
-                <SelectValue placeholder="Select Company" />
+                <SelectValue placeholder={companiesLoading ? "Loading..." : "Select Company"} />
               </SelectTrigger>
               <SelectContent>
                 {companies.map(c => (
-                  <SelectItem key={c.id} value={c.id}>
+                  <SelectItem key={c.id} value={c.id.toString()}>
                     <div className="flex items-center gap-2">
-                      {c.logoUrl ? <img src={c.logoUrl} className="w-4 h-4 object-contain" /> : <Building2 className="w-4 h-4" />}
+                      {c.logoUrl ? <img src={c.logoUrl} className="w-4 h-4 object-contain" alt="" /> : <Building2 className="w-4 h-4" />}
                       {c.name}
                     </div>
                   </SelectItem>
                 ))}
-                {companies.length === 0 && <SelectItem value="none" disabled>No companies added</SelectItem>}
+                {companies.length === 0 && !companiesLoading && (
+                  <SelectItem value="none" disabled>No companies added</SelectItem>
+                )}
               </SelectContent>
              </Select>
           </div>
@@ -272,8 +294,8 @@ export default function Home() {
                       <Label>Employee ID</Label>
                       <Input 
                         placeholder="EMP-001" 
-                        value={newEmployee.id || ""} 
-                        onChange={e => setNewEmployee({...newEmployee, id: e.target.value})}
+                        value={newEmployee.employeeId || ""} 
+                        onChange={e => setNewEmployee({...newEmployee, employeeId: e.target.value})}
                       />
                     </div>
                     <div className="space-y-2">
@@ -295,7 +317,9 @@ export default function Home() {
                     </div>
                   </div>
                   <DialogFooter>
-                    <Button onClick={handleAddEmployee}>Save Employee</Button>
+                    <Button onClick={handleAddEmployee} disabled={createEmployeeMutation.isPending}>
+                      {createEmployeeMutation.isPending ? "Saving..." : "Save Employee"}
+                    </Button>
                   </DialogFooter>
                 </DialogContent>
               </Dialog>
@@ -303,7 +327,12 @@ export default function Home() {
 
             <ScrollArea className="h-[calc(100vh-300px)]">
               <div className="space-y-2 pr-4">
-                {employees.length === 0 && (
+                {employeesLoading && (
+                  <div className="text-sm text-muted-foreground text-center py-8">
+                    Loading employees...
+                  </div>
+                )}
+                {!employeesLoading && employees.length === 0 && (
                   <div className="text-sm text-muted-foreground text-center py-8 border border-dashed rounded-lg">
                     No employees added.
                   </div>
@@ -320,7 +349,7 @@ export default function Home() {
                     <div className="flex justify-between items-start">
                       <div>
                         <div className="font-medium text-sm">{emp.name}</div>
-                        <div className="text-xs text-muted-foreground">{emp.id}</div>
+                        <div className="text-xs text-muted-foreground">{emp.employeeId}</div>
                       </div>
                       <Button 
                         variant="ghost" 
@@ -338,7 +367,7 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Center Column: Input (Hidden on Print) */}
+        {/* Center Column: Input */}
         <div className="lg:col-span-4 space-y-6 print:hidden">
           <div className="mb-4">
              <h1 className="text-xl font-bold text-gray-900 tracking-tight">Attendance Input</h1>
@@ -385,7 +414,7 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Right Column: Preview (Visible on Print) */}
+        {/* Right Column: Preview */}
         <div className="lg:col-span-5 print:w-full">
           <div className="sticky top-8">
              <div className="flex items-center justify-between mb-4 print:hidden">

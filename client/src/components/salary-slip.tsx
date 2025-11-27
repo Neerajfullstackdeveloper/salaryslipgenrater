@@ -1,11 +1,6 @@
 import { SalaryInput, SalaryResult } from "@/lib/calculations";
 import { forwardRef } from "react";
-
-export interface Company {
-  id: string;
-  name: string;
-  logoUrl?: string;
-}
+import type { Company } from "@shared/schema";
 
 interface SalarySlipProps {
   input: SalaryInput;
