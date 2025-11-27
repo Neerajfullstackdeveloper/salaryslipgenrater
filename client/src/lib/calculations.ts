@@ -27,47 +27,26 @@ export const RULES = {
 };
 
 export const calculateSalary = (input: SalaryInput): SalaryResult => {
-  // New Rule: "if emploee take four 10 min it is only alowd to take one 30min late"
-  // Interpretation: 
-  // Base Allowed 10min: 2
-  // Base Allowed 30min: 2
-  // Excess 10min are converted to 30min consumption.
-  // 4 total 10min = 2 excess 10min.
-  // If 2 excess 10min reduces allowed 30min to 1 (from 2), it means 2 excess 10min = 1 equivalent 30min.
-  // Ratio: 2 Excess 10min -> 1 Effective 30min.
-  
+  // Rules Recap:
+  // 1. Allowed 10min lates: 2
+  // 2. Allowed 30min lates: 2
+  // 3. Allowed Paid Leaves: 1
+  // 4. Conversion: Excess 10min lates convert to 30min lates at a 2:1 ratio.
+  //    (2 Excess 10min = 1 Equivalent 30min)
+  // 5. Deduction: Any 30min late (Actual or Converted) BEYOND the allowed 2 results in half-day deduction.
+
+  // Step 1: Calculate Excess 10min
   const excess10min = Math.max(0, input.late10minCount - RULES.ALLOWED_10MIN);
-  const excess30min = Math.max(0, input.late30minCount - RULES.ALLOWED_30MIN); // This is just the raw excess from the 30min bucket
   
-  // Convert excess 10min to 30min units (Ratio 2:1)
+  // Step 2: Convert Excess 10min to 30min equivalent (2:1 ratio)
+  // "four 10min late... one 30min late" -> Excess 10min = 2. Converted = 1.
   const convertedFrom10 = excess10min / 2;
   
-  // Effective 30min used for deduction calculation
-  // We take the Actual 30min count and add the converted amount from 10min lates.
-  // Then we check against the ALLOWED_30MIN.
-  // Formula: (Actual30 + (Excess10 / 2)) - Allowed30
-  // Wait, checking Scenario A: 
-  // Input: 4x 10min, 1x 30min.
-  // Excess10 = 2. Converted = 1.
-  // Total Effective 30min Load = 1 (Actual) + 1 (Converted) = 2.
-  // Allowed = 2.
-  // Excess = 2 - 2 = 0. No Deduction. Correct.
-  
-  // Scenario B: 2x 10min, 2x 30min.
-  // Excess10 = 0. Converted = 0.
-  // Total Effective = 2 (Actual) + 0 = 2.
-  // Allowed = 2.
-  // Excess = 0. No Deduction. Correct.
-  
-  // Scenario C (Implicit): 4x 10min, 2x 30min.
-  // Excess10 = 2. Converted = 1.
-  // Total Effective = 2 (Actual) + 1 (Converted) = 3.
-  // Allowed = 2.
-  // Excess = 3 - 2 = 1. Deduction of 1 half day. Correct.
-
+  // Step 3: Calculate Total Effective 30min usage
+  // We add the actual 30min lates to the converted ones.
   const effectiveLate30minTotal = input.late30minCount + convertedFrom10;
   
-  // Calculate how many 30min units are liable for deduction
+  // Step 4: Calculate Liable Units (How many are OVER the limit of 2)
   const liable30minUnits = Math.max(0, effectiveLate30minTotal - RULES.ALLOWED_30MIN);
 
   const oneDaySalary = input.basicSalary / 30;
@@ -77,7 +56,7 @@ export const calculateSalary = (input: SalaryInput): SalaryResult => {
   const extraLeaves = Math.max(0, input.fullDayLeaveCount - RULES.ALLOWED_FULL_DAY);
   const leaveDeduction = extraLeaves * oneDaySalary;
   
-  // Half Day Leave Deduction
+  // Half Day Leave Deduction (assuming these are separate from the late deductions)
   const halfDayDeduction = input.halfDayLeaveCount * halfDaySalary;
 
   // Late Deduction: liable30minUnits * half_day_salary

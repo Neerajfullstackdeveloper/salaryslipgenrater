@@ -146,13 +146,22 @@ export default function Home() {
 
   // --- PDF ---
   const handleDownloadPdf = async () => {
-    if (!slipRef.current) return;
+    // Create a temporary container for the PDF generation to avoid scaling/layout issues from the preview
+    const elementToCapture = slipRef.current;
+    if (!elementToCapture) return;
+
     setIsGenerating(true);
     try {
-      const canvas = await html2canvas(slipRef.current, {
-        scale: 2,
+      // We clone the element to render it at full scale off-screen or in a controlled way
+      // Actually, html2canvas works best if the element is visible. 
+      // We will use the existing ref but ensure we pass correct options.
+      
+      const canvas = await html2canvas(elementToCapture, {
+        scale: 3, // Higher quality
+        useCORS: true, // Important for images (logos)
         logging: false,
-        backgroundColor: "#ffffff"
+        backgroundColor: "#ffffff",
+        windowWidth: 210 * 3.7795275591, // A4 width in pixels approx
       });
       
       const imgData = canvas.toDataURL("image/png");
@@ -163,15 +172,19 @@ export default function Home() {
       });
       
       const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = pdf.internal.pageSize.getHeight();
       const imgWidth = canvas.width;
+      const imgHeight = canvas.height;
       const ratio = pdfWidth / imgWidth;
       
-      pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, canvas.height * ratio);
+      const finalHeight = imgHeight * ratio;
+      
+      pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, finalHeight);
       pdf.save(`Salary_Slip_${input.employeeName || 'Employee'}.pdf`);
       toast({ title: "Success", description: "PDF generated successfully." });
     } catch (error) {
       console.error("PDF Generation Error", error);
-      toast({ title: "Error", description: "Failed to generate PDF.", variant: "destructive" });
+      toast({ title: "Error", description: "Failed to generate PDF. Please try again.", variant: "destructive" });
     } finally {
       setIsGenerating(false);
     }

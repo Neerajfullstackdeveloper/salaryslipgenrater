@@ -107,23 +107,26 @@ export const SalarySlip = forwardRef<HTMLDivElement, SalarySlipProps>(({ input, 
                   <span>Late Deductions</span>
                   <span className="font-mono">{currencyFormatter.format(result.lateDeduction)}</span>
                 </div>
+                
                 {result.extra30minLate > 0 && (
-                  <div className="text-xs text-gray-500 pl-2 italic">
-                    (Excess 30m Units: {numberFormatter.format(result.extra30minLate)})
+                  <div className="text-[10px] text-gray-500 pl-2 italic">
+                     Excess 30m Units: {numberFormatter.format(result.extra30minLate)}
+                     <br/>
+                     (Includes {result.extra10minLate/2} units from {result.extra10minLate*2} excess 10m lates)
                   </div>
                 )}
                 
-                <div className="flex justify-between text-red-600">
+                <div className="flex justify-between text-red-600 mt-2">
                   <span>Leave Deductions</span>
                   <span className="font-mono">{currencyFormatter.format(result.leaveDeduction)}</span>
                 </div>
                 {result.leaveDeduction > 0 && (
-                  <div className="text-xs text-gray-500 pl-2 italic">
-                    (Unpaid Days: {input.fullDayLeaveCount > 1 ? input.fullDayLeaveCount - 1 : 0})
+                  <div className="text-[10px] text-gray-500 pl-2 italic">
+                    Unpaid Days: {input.fullDayLeaveCount > 1 ? input.fullDayLeaveCount - 1 : 0}
                   </div>
                 )}
                 
-                <div className="flex justify-between text-red-600">
+                <div className="flex justify-between text-red-600 mt-2">
                   <span>Half Day Deductions</span>
                   <span className="font-mono">{currencyFormatter.format(result.halfDayDeduction)}</span>
                 </div>
@@ -163,6 +166,9 @@ export const SalarySlip = forwardRef<HTMLDivElement, SalarySlipProps>(({ input, 
                 <div className="font-bold">{input.halfDayLeaveCount}</div>
                 <div className="text-gray-500">Half Leaves</div>
               </div>
+            </div>
+            <div className="mt-2 text-[10px] text-gray-400 text-center border-t border-dashed pt-1">
+              Allowed: 2x 10m, 2x 30m, 1x Full Leave
             </div>
           </div>
         </div>
