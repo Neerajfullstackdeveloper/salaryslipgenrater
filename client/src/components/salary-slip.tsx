@@ -1,13 +1,19 @@
 import { SalaryInput, SalaryResult } from "@/lib/calculations";
 import { forwardRef } from "react";
-import { Separator } from "@/components/ui/separator";
+
+export interface Company {
+  id: string;
+  name: string;
+  logoUrl?: string;
+}
 
 interface SalarySlipProps {
   input: SalaryInput;
   result: SalaryResult;
+  company?: Company;
 }
 
-export const SalarySlip = forwardRef<HTMLDivElement, SalarySlipProps>(({ input, result }, ref) => {
+export const SalarySlip = forwardRef<HTMLDivElement, SalarySlipProps>(({ input, result, company }, ref) => {
   const currencyFormatter = new Intl.NumberFormat('en-IN', {
     style: 'currency',
     currency: 'INR',
@@ -30,10 +36,25 @@ export const SalarySlip = forwardRef<HTMLDivElement, SalarySlipProps>(({ input, 
       <div className="border-2 border-gray-800 h-full p-6 flex flex-col justify-between relative">
         
         <div>
-          {/* Header */}
-          <div className="text-center border-b-2 border-gray-800 pb-6 mb-8">
-            <h1 className="text-3xl font-bold uppercase tracking-widest mb-1">Salary Slip</h1>
-            <p className="text-gray-600 font-sans text-sm uppercase tracking-wide">{input.month || "Month Year"}</p>
+          {/* Header with Company Info */}
+          <div className="flex items-center justify-between border-b-2 border-gray-800 pb-6 mb-8">
+            <div className="flex items-center gap-4">
+               {company?.logoUrl ? (
+                 <img src={company.logoUrl} alt="Logo" className="h-16 w-16 object-contain" />
+               ) : (
+                 <div className="h-16 w-16 bg-gray-100 flex items-center justify-center border border-gray-200 text-gray-400 text-xs">
+                   NO LOGO
+                 </div>
+               )}
+               <div>
+                 <h2 className="text-xl font-bold uppercase tracking-wide">{company?.name || "Company Name"}</h2>
+                 <p className="text-xs text-gray-500 font-sans">Salary Slip / Pay Advice</p>
+               </div>
+            </div>
+            <div className="text-right">
+              <h1 className="text-3xl font-bold uppercase tracking-widest text-gray-900">Salary Slip</h1>
+              <p className="text-gray-600 font-sans text-sm uppercase tracking-wide mt-1">{input.month || "Month Year"}</p>
+            </div>
           </div>
 
           {/* Employee Info Table */}
@@ -88,7 +109,7 @@ export const SalarySlip = forwardRef<HTMLDivElement, SalarySlipProps>(({ input, 
                 </div>
                 {result.extra30minLate > 0 && (
                   <div className="text-xs text-gray-500 pl-2 italic">
-                    (Excess 30m Lates: {numberFormatter.format(result.extra30minLate)})
+                    (Excess 30m Units: {numberFormatter.format(result.extra30minLate)})
                   </div>
                 )}
                 
@@ -159,6 +180,7 @@ export const SalarySlip = forwardRef<HTMLDivElement, SalarySlipProps>(({ input, 
              </div>
              <div className="text-center">
                <div className="border-t border-black w-40 pt-2">Director Signature</div>
+               {company?.name && <div className="text-xs text-gray-500 mt-1">{company.name}</div>}
              </div>
            </div>
            
