@@ -7,13 +7,7 @@ import {
   type InsertCompany,
   type SalarySlip,
   type InsertSalarySlip,
-  users,
-  employees,
-  companies,
-  salarySlips
 } from "@shared/schema";
-import { db } from "./db";
-import { eq } from "drizzle-orm";
 
 export interface IStorage {
   // User methods
@@ -42,87 +36,155 @@ export interface IStorage {
 }
 
 export class DatabaseStorage implements IStorage {
+  // This class is no longer used — the app runs on InMemoryStorage only.
+  // Kept here for reference but will throw if instantiated.
+  constructor() {
+    throw new Error("DatabaseStorage is no longer supported. Use InMemoryStorage instead.");
+  }
+
+  async getUser(_id: string): Promise<User | undefined> {
+    throw new Error("Not implemented");
+  }
+  async getUserByUsername(_username: string): Promise<User | undefined> {
+    throw new Error("Not implemented");
+  }
+  async createUser(_user: InsertUser): Promise<User> {
+    throw new Error("Not implemented");
+  }
+  async getEmployees(): Promise<Employee[]> {
+    throw new Error("Not implemented");
+  }
+  async getEmployee(_id: number): Promise<Employee | undefined> {
+    throw new Error("Not implemented");
+  }
+  async getEmployeeByEmployeeId(_employeeId: string): Promise<Employee | undefined> {
+    throw new Error("Not implemented");
+  }
+  async createEmployee(_insertEmployee: InsertEmployee): Promise<Employee> {
+    throw new Error("Not implemented");
+  }
+  async updateEmployee(_id: number, _updateData: Partial<InsertEmployee>): Promise<Employee> {
+    throw new Error("Not implemented");
+  }
+  async deleteEmployee(_id: number): Promise<void> {
+    throw new Error("Not implemented");
+  }
+  async getCompanies(): Promise<Company[]> {
+    throw new Error("Not implemented");
+  }
+  async getCompany(_id: number): Promise<Company | undefined> {
+    throw new Error("Not implemented");
+  }
+  async createCompany(_insertCompany: InsertCompany): Promise<Company> {
+    throw new Error("Not implemented");
+  }
+  async updateCompany(_id: number, _updateData: Partial<InsertCompany>): Promise<Company> {
+    throw new Error("Not implemented");
+  }
+  async deleteCompany(_id: number): Promise<void> {
+    throw new Error("Not implemented");
+  }
+  async getSalarySlips(_employeeId?: number): Promise<SalarySlip[]> {
+    throw new Error("Not implemented");
+  }
+  async createSalarySlip(_insertSlip: InsertSalarySlip): Promise<SalarySlip> {
+    throw new Error("Not implemented");
+  }
+}
+
+class InMemoryStorage implements IStorage {
+  private users: User[] = [];
+  private employees: Employee[] = [];
+  private companies: Company[] = [];
+  private salarySlips: SalarySlip[] = [];
+
+  private userIdCounter = 0;
+  private employeeIdCounter = 0;
+  private companyIdCounter = 0;
+  private salarySlipIdCounter = 0;
+
   // User methods
   async getUser(id: string): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.id, id));
-    return user || undefined;
+    return this.users.find(u => u.id === id);
   }
 
   async getUserByUsername(username: string): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.username, username));
-    return user || undefined;
+    return this.users.find(u => u.username === username);
   }
 
-  async createUser(insertUser: InsertUser): Promise<User> {
-    const [user] = await db.insert(users).values(insertUser).returning();
-    return user;
+  async createUser(user: InsertUser): Promise<User> {
+    const created: any = { ...user, id: `${++this.userIdCounter}` };
+    this.users.push(created);
+    return created;
   }
 
   // Employee methods
   async getEmployees(): Promise<Employee[]> {
-    return await db.select().from(employees);
+    return [...this.employees];
   }
 
   async getEmployee(id: number): Promise<Employee | undefined> {
-    const [employee] = await db.select().from(employees).where(eq(employees.id, id));
-    return employee || undefined;
+    return this.employees.find(e => e.id === id);
   }
 
   async getEmployeeByEmployeeId(employeeId: string): Promise<Employee | undefined> {
-    const [employee] = await db.select().from(employees).where(eq(employees.employeeId, employeeId));
-    return employee || undefined;
+    return this.employees.find(e => e.employeeId === employeeId);
   }
 
   async createEmployee(insertEmployee: InsertEmployee): Promise<Employee> {
-    const [employee] = await db.insert(employees).values(insertEmployee).returning();
-    return employee;
+    const created: any = { ...insertEmployee, id: ++this.employeeIdCounter };
+    this.employees.push(created);
+    return created;
   }
 
   async updateEmployee(id: number, updateData: Partial<InsertEmployee>): Promise<Employee> {
-    const [employee] = await db.update(employees).set(updateData).where(eq(employees.id, id)).returning();
-    return employee;
+    const idx = this.employees.findIndex(e => e.id === id);
+    if (idx === -1) throw new Error('Employee not found');
+    this.employees[idx] = { ...this.employees[idx], ...updateData } as Employee;
+    return this.employees[idx];
   }
 
   async deleteEmployee(id: number): Promise<void> {
-    await db.delete(employees).where(eq(employees.id, id));
+    this.employees = this.employees.filter(e => e.id !== id);
   }
 
   // Company methods
   async getCompanies(): Promise<Company[]> {
-    return await db.select().from(companies);
+    return [...this.companies];
   }
 
   async getCompany(id: number): Promise<Company | undefined> {
-    const [company] = await db.select().from(companies).where(eq(companies.id, id));
-    return company || undefined;
+    return this.companies.find(c => c.id === id);
   }
 
   async createCompany(insertCompany: InsertCompany): Promise<Company> {
-    const [company] = await db.insert(companies).values(insertCompany).returning();
-    return company;
+    const created: any = { ...insertCompany, id: ++this.companyIdCounter };
+    this.companies.push(created);
+    return created;
   }
 
   async updateCompany(id: number, updateData: Partial<InsertCompany>): Promise<Company> {
-    const [company] = await db.update(companies).set(updateData).where(eq(companies.id, id)).returning();
-    return company;
+    const idx = this.companies.findIndex(c => c.id === id);
+    if (idx === -1) throw new Error('Company not found');
+    this.companies[idx] = { ...this.companies[idx], ...updateData } as Company;
+    return this.companies[idx];
   }
 
   async deleteCompany(id: number): Promise<void> {
-    await db.delete(companies).where(eq(companies.id, id));
+    this.companies = this.companies.filter(c => c.id !== id);
   }
 
   // Salary Slip methods
   async getSalarySlips(employeeId?: number): Promise<SalarySlip[]> {
-    if (employeeId) {
-      return await db.select().from(salarySlips).where(eq(salarySlips.employeeId, employeeId));
-    }
-    return await db.select().from(salarySlips);
+    if (employeeId) return this.salarySlips.filter(s => s.employeeId === employeeId);
+    return [...this.salarySlips];
   }
 
   async createSalarySlip(insertSlip: InsertSalarySlip): Promise<SalarySlip> {
-    const [slip] = await db.insert(salarySlips).values(insertSlip).returning();
-    return slip;
+    const created: any = { ...insertSlip, id: ++this.salarySlipIdCounter };
+    this.salarySlips.push(created);
+    return created;
   }
 }
 
-export const storage = new DatabaseStorage();
+export const storage = new InMemoryStorage();

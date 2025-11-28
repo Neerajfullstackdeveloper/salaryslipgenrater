@@ -1,75 +1,52 @@
-import { sql } from "drizzle-orm";
-import { pgTable, text, varchar, integer, serial, timestamp } from "drizzle-orm/pg-core";
-import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
-export const users = pgTable("users", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  username: text("username").notNull().unique(),
-  password: text("password").notNull(),
-});
-
-export const insertUserSchema = createInsertSchema(users).pick({
-  username: true,
-  password: true,
+// User schema
+export const insertUserSchema = z.object({
+  username: z.string().min(1),
+  password: z.string().min(1),
 });
 
 export type InsertUser = z.infer<typeof insertUserSchema>;
-export type User = typeof users.$inferSelect;
+export type User = InsertUser & { id: string };
 
-// Employees Table
-export const employees = pgTable("employees", {
-  id: serial("id").primaryKey(),
-  employeeId: text("employee_id").notNull().unique(),
-  name: text("name").notNull(),
-  basicSalary: integer("basic_salary").notNull(),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-});
-
-export const insertEmployeeSchema = createInsertSchema(employees).omit({
-  id: true,
-  createdAt: true,
+// Employee schema
+export const insertEmployeeSchema = z.object({
+  employeeId: z.string().min(1),
+  name: z.string().min(1),
+  basicSalary: z.number().int().positive(),
 });
 
 export type InsertEmployee = z.infer<typeof insertEmployeeSchema>;
-export type Employee = typeof employees.$inferSelect;
+export type Employee = InsertEmployee & { id: number; createdAt: Date };
 
-// Companies Table
-export const companies = pgTable("companies", {
-  id: serial("id").primaryKey(),
-  name: text("name").notNull(),
-  logoUrl: text("logo_url"),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-});
-
-export const insertCompanySchema = createInsertSchema(companies).omit({
-  id: true,
-  createdAt: true,
+// Company schema
+export const insertCompanySchema = z.object({
+  name: z.string().min(1),
+  logoUrl: z.string().optional().nullable(),
 });
 
 export type InsertCompany = z.infer<typeof insertCompanySchema>;
-export type Company = typeof companies.$inferSelect;
+export type Company = InsertCompany & { id: number; createdAt: Date };
 
-// Salary Slips Table (for historical tracking)
-export const salarySlips = pgTable("salary_slips", {
-  id: serial("id").primaryKey(),
-  employeeId: integer("employee_id").notNull().references(() => employees.id),
-  companyId: integer("company_id").references(() => companies.id),
-  month: text("month").notNull(),
-  basicSalary: integer("basic_salary").notNull(),
-  late10minCount: integer("late_10min_count").notNull().default(0),
-  late30minCount: integer("late_30min_count").notNull().default(0),
-  fullDayLeaveCount: integer("full_day_leave_count").notNull().default(0),
-  halfDayLeaveCount: integer("half_day_leave_count").notNull().default(0),
-  totalDeductions: integer("total_deductions").notNull(),
-  netSalary: integer("net_salary").notNull(),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-});
-
-export const insertSalarySlipSchema = createInsertSchema(salarySlips).omit({
-  id: true,
-  createdAt: true,
+// Salary Slip schema
+export const insertSalarySlipSchema = z.object({
+  employeeId: z.number().int().positive(),
+  companyId: z.number().int().positive().optional().nullable(),
+  month: z.string().min(1),
+  basicSalary: z.number().int().positive(),
+  late10minCount: z.number().int().nonnegative().default(0),
+  late30minCount: z.number().int().nonnegative().default(0),
+  fullDayLeaveCount: z.number().int().nonnegative().default(0),
+  halfDayLeaveCount: z.number().int().nonnegative().default(0),
+  totalDeductions: z.number().int().nonnegative(),
+  netSalary: z.number().int().nonnegative(),
 });
 
 export type InsertSalarySlip = z.infer<typeof insertSalarySlipSchema>;
-export type SalarySlip = typeof salarySlips.$inferSelect;
+export type SalarySlip = InsertSalarySlip & { id: number; createdAt: Date };
+
+// Re-export table references (no longer needed but kept for compatibility)
+export const users = null;
+export const employees = null;
+export const companies = null;
+export const salarySlips = null;
