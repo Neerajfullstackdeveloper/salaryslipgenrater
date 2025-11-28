@@ -173,54 +173,29 @@ export default function Home() {
 
     setIsGenerating(true);
     try {
-      // Measure element and render canvas at higher scale for quality
-      const rect = elementToCapture.getBoundingClientRect();
-      const scale = 2; // increase for better quality
-
       const canvas = await html2canvas(elementToCapture, {
-        scale,
+        scale: 3,
         useCORS: true,
         logging: false,
         backgroundColor: "#ffffff",
-        width: Math.ceil(rect.width),
-        height: Math.ceil(rect.height),
+        windowWidth: 210 * 3.7795275591,
       });
-
+      
       const imgData = canvas.toDataURL("image/png");
-      const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
-
+      const pdf = new jsPDF({
+        orientation: "portrait",
+        unit: "mm",
+        format: "a4"
+      });
+      
       const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = pdf.internal.pageSize.getHeight();
-
-      // Get image properties to calculate rendered height in PDF units
-      const imgProps = (pdf as any).getImageProperties(imgData);
-      const imgWidth = imgProps.width;
-      const imgHeight = imgProps.height;
-
-      const renderedImgHeight = (imgHeight * pdfWidth) / imgWidth;
-
-      // If content fits on one page, just add it
-      if (renderedImgHeight <= pdfHeight) {
-        pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, renderedImgHeight);
-      } else {
-        // Handle multi-page PDF
-        let remainingHeight = renderedImgHeight;
-        let position = 0;
-
-        // Add first page
-        pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, renderedImgHeight);
-        remainingHeight -= pdfHeight;
-
-        // Add subsequent pages
-        while (remainingHeight > 0) {
-          position -= pdfHeight;
-          pdf.addPage();
-          pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, renderedImgHeight);
-          remainingHeight -= pdfHeight;
-        }
-      }
-
-      pdf.save(`Salary_Slip_${(input.employeeName || 'Employee').replace(/\s+/g, '_')}.pdf`);
+      const imgWidth = canvas.width;
+      const imgHeight = canvas.height;
+      const ratio = pdfWidth / imgWidth;
+      const finalHeight = imgHeight * ratio;
+      
+      pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, finalHeight);
+      pdf.save(`Salary_Slip_${input.employeeName || 'Employee'}.pdf`);
       toast({ title: "Success", description: "PDF generated successfully." });
     } catch (error) {
       console.error("PDF Generation Error", error);
