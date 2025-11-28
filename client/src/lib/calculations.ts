@@ -5,6 +5,7 @@ export interface SalaryInput {
   basicSalary: number;
   late10minCount: number;
   late30minCount: number;
+  late2HourCount?: number;
   fullDayLeaveCount: number;
   halfDayLeaveCount: number;
 }
@@ -21,8 +22,9 @@ export interface SalaryResult {
 }
 
 export const RULES = {
-  ALLOWED_10MIN: 2,
-  ALLOWED_30MIN: 2,
+  ALLOWED_10MIN: 3, // allow up to 3 ten-minute lates without converting
+  ALLOWED_30MIN: 2, // allow up to 2 thirty-minute lates without converting
+  ALLOWED_2H: 1, // allow up to 1 two-hour late without converting
   ALLOWED_FULL_DAY: 1,
 };
 
@@ -35,19 +37,26 @@ export const calculateSalary = (input: SalaryInput): SalaryResult => {
   //    (2 Excess 10min = 1 Equivalent 30min)
   // 5. Deduction: Any 30min late (Actual or Converted) BEYOND the allowed 2 results in half-day deduction.
 
-  // Step 1: Calculate Excess 10min
-  const excess10min = Math.max(0, input.late10minCount - RULES.ALLOWED_10MIN);
-  
-  // Step 2: Convert Excess 10min to 30min equivalent (2:1 ratio)
-  // "four 10min late... one 30min late" -> Excess 10min = 2. Converted = 1.
-  const convertedFrom10 = excess10min / 2;
-  
-  // Step 3: Calculate Total Effective 30min usage
-  // We add the actual 30min lates to the converted ones.
-  const effectiveLate30minTotal = input.late30minCount + convertedFrom10;
-  
-  // Step 4: Calculate Liable Units (How many are OVER the limit of 2)
-  const liable30minUnits = Math.max(0, effectiveLate30minTotal - RULES.ALLOWED_30MIN);
+  // New unified approach:
+  // Convert all late counts into minutes, then into 30-minute units.
+  // - 10min lates count as 10 minutes each
+  // - 30min lates count as 30 minutes each
+  // - 2-hour lates count as 120 minutes each
+  // We also compute allowed minutes from the per-category allowances.
+
+  const tenMin = (input.late10minCount || 0) * 10;
+  const thirtyMin = (input.late30minCount || 0) * 30;
+  const twoHourMin = (input.late2HourCount || 0) * 120;
+
+  const totalLateMinutes = tenMin + thirtyMin + twoHourMin;
+
+  const allowedMinutes = (RULES.ALLOWED_10MIN * 10) + (RULES.ALLOWED_30MIN * 30) + (RULES.ALLOWED_2H * 120);
+
+  const total30MinUnits = Math.floor(totalLateMinutes / 30);
+  const allowed30MinUnits = Math.floor(allowedMinutes / 30);
+
+  // Liable units beyond allowed -> each unit corresponds to a 30-minute deduction bucket
+  const liable30minUnits = Math.max(0, total30MinUnits - allowed30MinUnits);
 
   const oneDaySalary = input.basicSalary / 30;
   const halfDaySalary = oneDaySalary / 2;
@@ -66,8 +75,11 @@ export const calculateSalary = (input: SalaryInput): SalaryResult => {
   const netSalary = input.basicSalary - totalDeductions;
 
   return {
-    effectiveLate30min: effectiveLate30minTotal,
-    extra10minLate: excess10min,
+    // effectiveLate30min: the number of 30-minute units counted (including conversions)
+    effectiveLate30min: total30MinUnits,
+    // extra10minLate: how many 10-min lates were beyond the allowed per-category allowance
+    extra10minLate: Math.max(0, input.late10minCount - RULES.ALLOWED_10MIN),
+    // extra30minLate: the number of liable 30-minute units beyond allowed
     extra30minLate: liable30minUnits,
     leaveDeduction,
     halfDayDeduction,

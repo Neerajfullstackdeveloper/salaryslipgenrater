@@ -16,6 +16,7 @@ const formSchema = z.object({
   basicSalary: z.coerce.number().min(0, "Salary must be positive"),
   late10minCount: z.coerce.number().min(0),
   late30minCount: z.coerce.number().min(0),
+  late2HourCount: z.coerce.number().min(0),
   fullDayLeaveCount: z.coerce.number().min(0),
   halfDayLeaveCount: z.coerce.number().min(0),
 });
@@ -35,6 +36,7 @@ export function SalaryForm({ onCalculate, defaultValues }: SalaryFormProps) {
       basicSalary: 0,
       late10minCount: 0,
       late30minCount: 0,
+      late2HourCount: 0,
       fullDayLeaveCount: 0,
       halfDayLeaveCount: 0,
       ...defaultValues
@@ -51,6 +53,7 @@ export function SalaryForm({ onCalculate, defaultValues }: SalaryFormProps) {
         basicSalary: defaultValues.basicSalary || 0,
         late10minCount: defaultValues.late10minCount || 0,
         late30minCount: defaultValues.late30minCount || 0,
+        late2HourCount: defaultValues.late2HourCount || 0,
         fullDayLeaveCount: defaultValues.fullDayLeaveCount || 0,
         halfDayLeaveCount: defaultValues.halfDayLeaveCount || 0,
       });
@@ -202,6 +205,27 @@ export function SalaryForm({ onCalculate, defaultValues }: SalaryFormProps) {
                           data-testid="input-late30"
                           inputMode="numeric"
                           aria-label="30 minute lates"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="late2HourCount"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>2h Lates</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="number"
+                          min={0}
+                          step={1}
+                          {...field}
+                          data-testid="input-late2h"
+                          inputMode="numeric"
+                          aria-label="2 hour lates"
                         />
                       </FormControl>
                       <FormMessage />
