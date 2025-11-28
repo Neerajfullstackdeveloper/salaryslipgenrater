@@ -84,7 +84,13 @@ export function SalaryForm({ onCalculate, defaultValues }: SalaryFormProps) {
                   <FormItem>
                     <FormLabel>Full Name</FormLabel>
                     <FormControl>
-                      <Input placeholder="John Doe" {...field} data-testid="input-name" />
+                      <Input
+                        placeholder="John Doe"
+                        {...field}
+                        data-testid="input-name"
+                        aria-label="Employee full name"
+                        className="w-full"
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -97,7 +103,13 @@ export function SalaryForm({ onCalculate, defaultValues }: SalaryFormProps) {
                   <FormItem>
                     <FormLabel>Employee ID</FormLabel>
                     <FormControl>
-                      <Input placeholder="EMP-001" {...field} data-testid="input-id" />
+                      <Input
+                        placeholder="EMP-001"
+                        {...field}
+                        data-testid="input-id"
+                        aria-label="Employee ID"
+                        className="w-full"
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -113,7 +125,13 @@ export function SalaryForm({ onCalculate, defaultValues }: SalaryFormProps) {
                   <FormItem>
                     <FormLabel>Month</FormLabel>
                     <FormControl>
-                      <Input placeholder="November 2025" {...field} data-testid="input-month" />
+                      <Input
+                        placeholder="November 2025"
+                        {...field}
+                        data-testid="input-month"
+                        aria-label="Month"
+                        className="w-full"
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -126,8 +144,19 @@ export function SalaryForm({ onCalculate, defaultValues }: SalaryFormProps) {
                   <FormItem>
                     <FormLabel>Basic Salary (₹)</FormLabel>
                     <FormControl>
-                      <Input type="number" {...field} data-testid="input-salary" />
+                      <Input
+                        type="number"
+                        {...field}
+                        data-testid="input-salary"
+                        inputMode="numeric"
+                        step={1}
+                        min={0}
+                        pattern="[0-9]*"
+                        aria-label="Basic salary in INR"
+                        className="w-full"
+                      />
                     </FormControl>
+                    <div className="text-xs text-muted-foreground mt-1">Enter the basic salary in whole rupees.</div>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -144,7 +173,15 @@ export function SalaryForm({ onCalculate, defaultValues }: SalaryFormProps) {
                     <FormItem>
                       <FormLabel>10m Lates</FormLabel>
                       <FormControl>
-                        <Input type="number" min="0" {...field} data-testid="input-late10" />
+                        <Input
+                          type="number"
+                          min={0}
+                          step={1}
+                          {...field}
+                          data-testid="input-late10"
+                          inputMode="numeric"
+                          aria-label="10 minute lates"
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -157,7 +194,15 @@ export function SalaryForm({ onCalculate, defaultValues }: SalaryFormProps) {
                     <FormItem>
                       <FormLabel>30m Lates</FormLabel>
                       <FormControl>
-                        <Input type="number" min="0" {...field} data-testid="input-late30" />
+                        <Input
+                          type="number"
+                          min={0}
+                          step={1}
+                          {...field}
+                          data-testid="input-late30"
+                          inputMode="numeric"
+                          aria-label="30 minute lates"
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -170,7 +215,15 @@ export function SalaryForm({ onCalculate, defaultValues }: SalaryFormProps) {
                     <FormItem>
                       <FormLabel>Full Day Leaves</FormLabel>
                       <FormControl>
-                        <Input type="number" min="0" {...field} data-testid="input-leaves" />
+                        <Input
+                          type="number"
+                          min={0}
+                          step={1}
+                          {...field}
+                          data-testid="input-leaves"
+                          inputMode="numeric"
+                          aria-label="Full day leaves"
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -183,7 +236,15 @@ export function SalaryForm({ onCalculate, defaultValues }: SalaryFormProps) {
                     <FormItem>
                       <FormLabel>Half Day Leaves</FormLabel>
                       <FormControl>
-                        <Input type="number" min="0" {...field} data-testid="input-half-leaves" />
+                        <Input
+                          type="number"
+                          min={0}
+                          step={1}
+                          {...field}
+                          data-testid="input-half-leaves"
+                          inputMode="numeric"
+                          aria-label="Half day leaves"
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -192,16 +253,26 @@ export function SalaryForm({ onCalculate, defaultValues }: SalaryFormProps) {
               </div>
             </div>
             
-            <Button 
-              type="button" 
-              variant="outline" 
-              className="w-full"
-              onClick={() => form.reset()}
-              data-testid="button-reset"
-            >
-              <RotateCcw className="w-4 h-4 mr-2" />
-              Reset Form
-            </Button>
+            <div className="flex gap-3">
+              <Button 
+                type="button" 
+                variant="outline" 
+                className="flex-1"
+                onClick={() => form.reset()}
+                data-testid="button-reset"
+              >
+                <RotateCcw className="w-4 h-4 mr-2" />
+                Reset
+              </Button>
+              <Button
+                type="button"
+                className="flex-1"
+                onClick={() => form.handleSubmit((data) => onCalculate(data as SalaryInput))()}
+                data-testid="button-calc"
+              >
+                Calculate
+              </Button>
+            </div>
           </form>
         </Form>
       </CardContent>

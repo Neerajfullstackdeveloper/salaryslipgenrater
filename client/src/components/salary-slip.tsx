@@ -22,28 +22,28 @@ export const SalarySlip = forwardRef<HTMLDivElement, SalarySlipProps>(({ input, 
   });
 
   return (
-    <div 
-      ref={ref} 
-      className="bg-white text-black p-10 max-w-[210mm] mx-auto shadow-none print:shadow-none font-serif"
-      style={{ minHeight: '200mm' }} 
+    <div
+      ref={ref}
+      className="bg-white text-black p-8 max-w-[210mm] mx-auto shadow-none print:shadow-none"
+      style={{ minHeight: '200mm', fontFamily: 'Georgia, serif' }}
     >
       {/* Border Container */}
-      <div className="border-2 border-gray-800 h-full p-6 flex flex-col justify-between relative">
+      <div className="border-2 border-gray-800 h-full p-6 flex flex-col justify-between relative bg-white">
         
         <div>
           {/* Header with Company Info */}
           <div className="flex items-center justify-between border-b-2 border-gray-800 pb-6 mb-8">
             <div className="flex items-center gap-4">
                {company?.logoUrl ? (
-                 <img src={company.logoUrl} alt="Logo" className="h-16 w-16 object-contain" />
+                 <img src={company.logoUrl} alt="Logo" className="h-20 w-20 object-contain" />
                ) : (
-                 <div className="h-16 w-16 bg-gray-100 flex items-center justify-center border border-gray-200 text-gray-400 text-xs">
+                 <div className="h-20 w-20 bg-gray-100 flex items-center justify-center border border-gray-200 text-gray-400 text-xs">
                    NO LOGO
                  </div>
                )}
                <div>
-                 <h2 className="text-xl font-bold uppercase tracking-wide">{company?.name || "Company Name"}</h2>
-                 <p className="text-xs text-gray-500 font-sans">Salary Slip / Pay Advice</p>
+                 <h2 className="text-2xl font-bold uppercase tracking-wide">{company?.name || "Company Name"}</h2>
+                 <p className="text-sm text-gray-600 font-sans">Salary Slip / Pay Advice</p>
                </div>
             </div>
             <div className="text-right">
@@ -78,8 +78,8 @@ export const SalarySlip = forwardRef<HTMLDivElement, SalarySlipProps>(({ input, 
               <div className="p-3 font-bold uppercase text-xs tracking-wider text-center border-r border-gray-800">Earnings</div>
               <div className="p-3 font-bold uppercase text-xs tracking-wider text-center">Deductions</div>
             </div>
-            
-            <div className="grid grid-cols-2 font-sans text-sm min-h-[200px]">
+
+            <div className="grid grid-cols-2 font-sans text-sm min-h-[220px]">
               {/* Earnings Column */}
               <div className="border-r border-gray-800 p-4 space-y-2">
                 <div className="flex justify-between">
@@ -170,7 +170,7 @@ export const SalarySlip = forwardRef<HTMLDivElement, SalarySlipProps>(({ input, 
 
         {/* Footer Section */}
         <div>
-           <div className="flex items-center justify-between bg-black text-white p-4 mb-12">
+           <div className="flex items-center justify-between bg-black text-white p-4 mb-12 rounded-sm">
              <span className="font-bold uppercase tracking-widest text-sm">Net Pay</span>
              <span className="font-mono text-2xl font-bold" data-testid="slip-net">{currencyFormatter.format(result.netSalary)}</span>
            </div>
